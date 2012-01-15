@@ -13,8 +13,6 @@
 #include <sys/ipc.h>
 #include <sys/futex.h>
 
-/* TODO */
-
 #define TRY(code) if ((code) == -1) return -1;
 
 PRIVATE int get_ipc_endpt(endpoint_t *pt)
@@ -27,9 +25,9 @@ PRIVATE int get_ipc_endpt(endpoint_t *pt)
  * FUTEX_RMID - destroys futex,
  * FUTEX_WAIT - atomically puts caller to waiting queue and unlocks spinlock
  * 		(must be done atomically to deal with so-called 'lost wakeup' problem),
- * FUTEX_SIGNAL - wakeup one waiting process if any */
+ * FUTEX_SIGNAL - wakeup one waiting process, if none returns error */
 
-/* generic ipc futex caller, returns 0 success, other value on error */
+/* generic ipc futex caller, returns 0 on success, other value on error */
 PRIVATE int ipc_futex_call(futex_t* futex, int action)
 {
 	message m;
@@ -99,12 +97,13 @@ PUBLIC int futex_destroy(futex_t *futex)
 /* lock futex */
 PUBLIC int futex_lock(futex_t *futex)
 {
+	/* no-competition cost: 1 full barrier + O(1) */
 	spin_lock(&futex->lock);
 	while(futex->val == FUTEX_CLOSED) {
 		++futex->count;
-		/* automic sleep and unlock futex->lock */
+		/* atomic sleep and unlock futex->lock */
 		TRY(ipc_futex_call(futex, FUTEX_WAIT));
-		/* critical section inheritance: futex->lock */
+		/* critical section inheritance: futex->lock is locked */
 		--futex->count;
 	}
 	futex->val = FUTEX_CLOSED;
@@ -115,11 +114,12 @@ PUBLIC int futex_lock(futex_t *futex)
 /* unlock futex */
 PUBLIC int futex_unlock(futex_t *futex)
 {
+	/* no-competition cost: 1 full barrier + O(1) */
 	spin_lock(&futex->lock);
 	futex->val = FUTEX_RAISED;
 	if (futex->count > 0) {
 		TRY(ipc_futex_call(futex, FUTEX_SIGNAL));
-		/* critical section inheritance: futex->lock */
+		/* critical section inheritance: futex->lock is locked */
 	} else {
 		spin_unlock(&futex->lock);
 	}

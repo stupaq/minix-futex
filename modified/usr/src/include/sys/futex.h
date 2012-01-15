@@ -29,7 +29,7 @@ _PROTOTYPE( void spin_unlock, (spinlock_t *lock));
 typedef struct
 {
 	spinlock_t lock; /* userspace temporary lock */
-	int val; /* current value of mutex FUTEX_{RAISED,CLOSED}*/
+	int val; /* current value of mutex */
 	int count; /* number of processes waiting on wait queue */
 	int ipc_id; /* ipc identifier of futex */
 } futex_t;
