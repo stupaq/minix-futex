@@ -17,7 +17,7 @@ PRIVATE struct {
 	{ IPC_SEMGET,	do_semget,	0 },
 	{ IPC_SEMCTL,	do_semctl,	0 },
 	{ IPC_SEMOP,	do_semop,	1 },
-	{ IPC_FUTEXOP,	do_futexop,	0 }
+	{ IPC_FUTEX,	do_futexop,	1 }
 };
 
 #define SIZE(a) (sizeof(a)/sizeof(a[0]))

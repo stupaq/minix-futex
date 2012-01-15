@@ -19,6 +19,7 @@
 #include <sys/mman.h>
 #include <machine/vm.h>
 #include <sys/vm.h>
+#include <sys/futex.h>
 
 #include <time.h>
 #include <stdio.h>
@@ -41,7 +42,7 @@ _PROTOTYPE( int is_sem_nil, (void)                                       );
 _PROTOTYPE( int is_shm_nil, (void)                                       );
 _PROTOTYPE( void sem_process_vm_notify, (void)                           );
 
-/* Futex oparations. */
+/* futex oparations */
 _PROTOTYPE( int do_futexop, (message *) );
 
 EXTERN int identifier;
