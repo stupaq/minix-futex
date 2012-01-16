@@ -3,13 +3,14 @@
 
 #include <sys/types.h>
 
-typedef volatile i32_t spinlock_t;
-
 /* IPC futex routines */
 #define FUTEX_CREAT		0
 #define FUTEX_RMID		1
 #define FUTEX_SIGNAL	2
 #define FUTEX_WAIT		3
+
+/* IPC system-wide futex number limit */
+#define FUTEX_MAXNUM	2048
 
 typedef struct
 {

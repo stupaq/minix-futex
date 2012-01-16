@@ -51,7 +51,7 @@ int main(int argc, char** argv)
 	if (pid == 0) return 0;
 	
 	if (wait(NULL) != pid) return 1;
-	fprintf(stderr, "Value: %d balance: %d\n", *val, *max);
+	printf("balance: %d\n", *max);
 	temp = *val;
 	
 	if (futex_destroy(f)) return 1;

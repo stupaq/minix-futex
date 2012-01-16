@@ -6,17 +6,9 @@ install: modified install.sh
 backup: modified backup.sh
 	./backup.sh
 
-compile: libs gnu-libs ipc
-
-libs:
-	cd /usr/src && make includes libraries
-
-gnu-libs:
-	cd /usr/src && make gnu-includes gnu-libraries
-
-ipc:
+compile:
+	cd /usr/src && make includes gnu-includes libraries gnu-libraries
 	cd /usr/src/servers/ipc && make && make install
-	kill -KILL 104
 
 restore: backup modified restore.sh
 	./restore.sh

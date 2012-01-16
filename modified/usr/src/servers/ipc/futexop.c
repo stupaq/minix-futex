@@ -10,10 +10,8 @@ struct queue {
 	struct waiting *list; /* list of processes waiting */
 };
 
-/* system-wide futex count limit */
-#define	FUTEX_MAX_COUNT	2048
-
-PRIVATE struct queue futex_list[FUTEX_MAX_COUNT];
+/* everything with static storage duration is initialized to zero (null) */
+PRIVATE struct queue futex_list[FUTEX_MAXNUM];
 
 PRIVATE void wakeup(endpoint_t who, int error) {
 	message m;
@@ -33,6 +31,13 @@ PUBLIC int do_futexop(message *m)
 	int value = 0;
 	int error = OK;
 	int block = 0;
+
+	if (m->FUTEX_OPS != FUTEX_CREAT
+			&& (m->FUTEX_ID < 0 || m->FUTEX_ID >= SIZE(futex_list))) {
+		/* futex ipc_id out of range */
+		error = -1;
+		goto out;
+	}
 
 	switch(m->FUTEX_OPS) {
 		case FUTEX_CREAT:
@@ -83,14 +88,15 @@ PUBLIC int do_futexop(message *m)
 			break;
 		case FUTEX_WAIT:
 			if (OK != sys_datacopy(who_e, (vir_bytes) m->FUTEX_ADDR, SELF_E, (vir_bytes) &value, sizeof(int))) {
-				printf("IPC: futex value cannot be read\n");
+				printf("IPC: can not read futex value\n");
 				error = -1;
+				goto out;
 			}
 			if (value == m->FUTEX_VAL) {
 				fq = futex_list + m->FUTEX_ID;
 				/* put into sleep queue */
 				fq->count++;
-				/* here we don't care about heap fragmentation (much like in ipc/sem.c) */
+				/* works with NULL pointers like a charm */
 				fq->list = realloc(fq->list, sizeof(struct waiting) * fq->count);
 				if (fq->list == NULL) {
 					printf("IPC: futex waiting list lost\n");

@@ -33,7 +33,7 @@ PRIVATE int get_ipc_endpt(endpoint_t *pt)
 /* generic ipc futex caller, depending on action:
  * FUTEX_CREAT - creates futex and sets it's ipc_id
  * FUTEX_RMID - destroys futex
- * FUTEX_WAIT - atomically checks if futex has desired value and if so puts caller
+ * FUTEX_WAIT - atomically checks if futex has WAITING value and if so puts caller
  * 				into waiting queue, otherwise returns
  * FUTEX_SIGNAL - wakeup up to one waiting process
  * ---
@@ -96,7 +96,7 @@ PUBLIC int futex_lock(futex_t *futex)
 	int c;
 	if ((c = cmpxchg(&futex->val, UNLOCKED, LOCKED)) != UNLOCKED) {
 		do {
-			if (c == 2 || cmpxchg(&futex->val, LOCKED, WAITING) != UNLOCKED) {
+			if (c == WAITING || cmpxchg(&futex->val, LOCKED, WAITING) != UNLOCKED) {
 				TRY(ipc_futex_call(futex, FUTEX_WAIT));
 			}
 		} while ((c = cmpxchg(&futex->val, UNLOCKED, WAITING)) != UNLOCKED);
