@@ -1125,8 +1125,9 @@
 /* Futex */
 #define IPC_FUTEX	(IPC_BASE+8)
 #	define FUTEX_ID		m2_i1
-#	define FUTEX_OPS	m2_i2
-#	define FUTEX_LOCK	m2_i3
+#	define FUTEX_ADDR	m2_i2
+#	define FUTEX_VAL	m2_i3
+#	define FUTEX_OPS	m2_l1
 
 /*===========================================================================*
  *                Messages for Scheduling				     *

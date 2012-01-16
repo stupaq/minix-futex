@@ -5,10 +5,13 @@ struct waiting {
 };
 
 struct queue {
-	int used;
+	int used; /* used/free entry */
 	int count; /* number of processes waiting */
 	struct waiting *list; /* list of processes waiting */
 };
+
+/* system-wide futex count limit */
+#define	FUTEX_MAX_COUNT	2048
 
 PRIVATE struct queue futex_list[FUTEX_MAX_COUNT];
 
@@ -27,11 +30,9 @@ PUBLIC int do_futexop(message *m)
 	int i;
 	struct queue *fq;
 	endpoint_t who;
-	spinlock_t open = SPIN_UNLOCKED;
+	int value = 0;
 	int error = OK;
 	int block = 0;
-	int unlock = 0;
-
 
 	switch(m->FUTEX_OPS) {
 		case FUTEX_CREAT:
@@ -77,42 +78,33 @@ PUBLIC int do_futexop(message *m)
 				 * or points to allocated chunk of memory */
 				/* wakeup process */
 				wakeup(who, OK);
-			} else {
-				/* in general this might be confusing (signal on empty queue crashes),
-				 * but fits in our implementation */
-				printf("IPC: futex signal on empty queue\n");
-				error = -1;
-				goto out;
 			}
+			/* else: does nothing */
 			break;
 		case FUTEX_WAIT:
-			fq = futex_list + m->FUTEX_ID;
-			/* put into sleep queue */
-			fq->count++;
-			/* here we don't care about heap fragmentation (much like in ipc/sem.c) */
-			fq->list = realloc(fq->list, sizeof(struct waiting) * fq->count);
-			if (fq->list == NULL) {
-				printf("IPC: futex waiting list lost\n");
+			if (OK != sys_datacopy(who_e, (vir_bytes) m->FUTEX_ADDR, SELF_E, (vir_bytes) &value, sizeof(int))) {
+				printf("IPC: futex value cannot be read\n");
 				error = -1;
-				goto out;
 			}
-			fq->list[fq->count-1].who = who_e;
-			/* this operation blocks by definition and requires unlocking */
-			block++;
-			unlock++;
+			if (value == m->FUTEX_VAL) {
+				fq = futex_list + m->FUTEX_ID;
+				/* put into sleep queue */
+				fq->count++;
+				/* here we don't care about heap fragmentation (much like in ipc/sem.c) */
+				fq->list = realloc(fq->list, sizeof(struct waiting) * fq->count);
+				if (fq->list == NULL) {
+					printf("IPC: futex waiting list lost\n");
+					error = -1;
+					goto out;
+				}
+				fq->list[fq->count-1].who = who_e;
+				/* this operation blocks caller */
+				block++;
+			}
 			break;
 	}
 
 out:
-	/* unlock associated spinlock */
-	if (unlock) {
-		if (OK != sys_datacopy(SELF_E, (vir_bytes) &open, who_e, (vir_bytes) m->FUTEX_LOCK, sizeof(spinlock_t))) {
-			printf("IPC: futex lock cannot be unlocked\n");
-			error = -1;
-			block = 0;
-		}
-	}
-
 	/* reply to unblock caller */
 	if (!block) {
 		m->m_type = error;
