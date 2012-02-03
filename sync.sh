@@ -1,12 +1,9 @@
 #!/bin/bash
 
 # sync
-ssh minix 'rm -rf ~/zad3/*'
-scp -q -r ./ minix:~/zad3/
-ssh minix 'rm -rf ~/zad3/.git*'
-
-# make
-#ssh minix 'cd ~/zad3/; make; make compile;'
+ssh minix 'rm -rf ~/futex/*'
+scp -q -r ./ minix:~/futex/
+ssh minix 'rm -rf ~/futex/.git*'
 
 # reboot
 #ssh minix 'reboot'

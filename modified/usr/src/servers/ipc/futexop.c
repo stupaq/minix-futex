@@ -13,11 +13,15 @@ struct queue {
 /* everything with static storage duration is initialized to zero (null) */
 PRIVATE struct queue futex_list[FUTEX_MAXNUM];
 
-PRIVATE void wakeup(endpoint_t who, int error) {
+/* returns number of processes that has been woken up */
+PRIVATE int wakeup(endpoint_t who, int error) {
 	message m;
 
 	m.m_type = error;
-	sendnb(who, &m);
+	if (sendnb(who, &m))
+		return 0;
+	/* TODO: consider what happes if process waiting on futex has became zombie */
+	return 1;
 }
 
 #define SIZE(a) (sizeof(a)/sizeof(a[0]))
@@ -71,7 +75,8 @@ PUBLIC int do_futexop(message *m)
 			break;
 		case FUTEX_SIGNAL:
 			fq = futex_list + m->FUTEX_ID;
-			if (fq->count > 0) {
+			int woken = 0;
+			while (fq->count > 0 && !woken) {
 				/* get first process from waiting queue */
 				who = fq->list[0].who;
 				/* pop from waiting queue */
@@ -82,7 +87,7 @@ PUBLIC int do_futexop(message *m)
 				 * value of fq->list is then either NULL (never touched)
 				 * or points to allocated chunk of memory */
 				/* wakeup process */
-				wakeup(who, OK);
+				woken = wakeup(who, OK);
 			}
 			/* else: does nothing */
 			break;
