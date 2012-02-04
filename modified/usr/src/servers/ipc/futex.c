@@ -35,6 +35,7 @@ PUBLIC int do_futexop(message *m)
 	int value = 0;
 	int error = OK;
 	int block = 0;
+	int woken = 0;
 
 	if (m->FUTEX_OPS != FUTEX_CREAT
 			&& (m->FUTEX_ID < 0 || m->FUTEX_ID >= SIZE(futex_list))) {
@@ -75,7 +76,6 @@ PUBLIC int do_futexop(message *m)
 			break;
 		case FUTEX_SIGNAL:
 			fq = futex_list + m->FUTEX_ID;
-			int woken = 0;
 			while (fq->count > 0 && !woken) {
 				/* get first process from waiting queue */
 				who = fq->list[0].who;

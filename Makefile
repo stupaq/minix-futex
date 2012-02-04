@@ -6,8 +6,12 @@ install: modified install.sh
 backup: modified backup.sh
 	./backup.sh
 
-compile:
+compile: libs ipc
+
+libs:
 	cd /usr/src && make includes gnu-includes libraries gnu-libraries
+
+ipc:
 	cd /usr/src/servers/ipc && make && make install
 
 restore: backup modified restore.sh
